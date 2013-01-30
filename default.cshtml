@@ -1,7 +1,17 @@
-Hello!
+<html>
+<body>
+<h1>Packages Used:</h1>
+
 
 <ul>
 @foreach(var m in Model) {
-	<li>@m.Id</li>
+	<li>
+		<span>@m.Id</span>
+		<span>@m.Version</span>
+		<span>@m.ProjectUrl</span>
+		<span>@m.LicenseUrl</span>
+	</li>
 }
 </ul>
+</body>
+</html>

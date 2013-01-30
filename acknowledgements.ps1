@@ -1,14 +1,18 @@
-# need to set the Model for the template
-# need to return pack info under one object so it can be set as the model
+#Needs to force recompile of the template each time (otherwise the type stays in the appdomain
+#and changes to the template don't show up in the output)
+# Need to figure out how to have multiple package sources or ignore non-public packages
+# Need to get rid of the little [string] at the beginning
+# Need to make the default template cooler
 
-if($args.length -lt 2)
+if($args.length -lt 3)
 {
-	Write-Host "Usage: acknowledgements [path to packages.config] [path to template]"
+	Write-Host "Usage: acknowledgements [path to packages.config] [path to template] [output path]"
 	exit
 }
 
 $packagesConfigFile = $args[0]
 $templateFile = $args[1]
+$outputFile = $args[2]
 
 function getNugetData ($package) {
 		
@@ -46,7 +50,7 @@ function Get-FrameworkDirectory()
 
 [xml]$packagesConfig = (Get-Content $packagesConfigFile)
 
-$packages = @($packagesConfig.packages.package | select-object -index 0,2) | % {getNugetData $_} 
+$packages = @($packagesConfig.packages.package | % {getNugetData $_})
 
 $razorAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
                 ? { $_.FullName -match "^System.Web.Razor" }
@@ -107,7 +111,7 @@ $compiler.GenerateCodeFromCompileUnit(
 )
 $templateCode = $codeWriter.ToString()
 
-$allcode = @"
+$allCode = @"
 using System;
 using System.Text;
 using Microsoft.CSharp;
@@ -139,7 +143,8 @@ namespace Templates {
 }
 "@ + "`n" + $templateCode
 
-Add-Type -typedefinition $allcode -ReferencedAssemblies Microsoft.CSharp.dll
+Add-Type -TypeDefinition $allCode -ReferencedAssemblies Microsoft.CSharp.dll
 
-$templateinstance = new-object -typename Templates.Template
-$templateinstance.Render($packages)
+$templateInstance = new-object -typename Templates.Template
+
+Set-Content ($outputFile) $templateinstance.Render($packages)
