@@ -1,9 +1,14 @@
-# Need to search for razor dll
-# need to call nuget to install razor dll if it's not there
-# need to read in template from a file
-# need a default file
 # need to set the Model for the template
 # need to return pack info under one object so it can be set as the model
+
+if($args.length -lt 2)
+{
+	Write-Host "Usage: acknowledgements [path to packages.config] [path to template]"
+	exit
+}
+
+$packagesConfigFile = $args[0]
+$templateFile = $args[1]
 
 function getNugetData ($package) {
 		
@@ -17,8 +22,6 @@ function getNugetData ($package) {
 	$sr = new-object System.IO.StreamReader $reqstream
 	$result = $sr.ReadToEnd()
 	
-	Write-Host $result
-	
 	[xml]$packageData = $result
 	
 	@{LicenseUrl = $packageData.entry.properties.LicenseUrl; `
@@ -27,58 +30,95 @@ function getNugetData ($package) {
 	Version = $package.version}
 }
 
-# $packagesconfigfile = "c:\users\hartez\documents\traceur\lhp\beadmin\lhptadminconsole\packages.config"
-# [xml]$packagesconfig = (get-content $packagesconfigfile)
+function Get-ScriptDirectory
+{
+  $Invocation = (Get-Variable MyInvocation -Scope 1).Value
+  Split-Path $Invocation.MyCommand.Path
+}
 
-# $data = getnugetdata ($packagesconfig.packages.package | select-object -index 0)
+[xml]$packagesConfig = (Get-Content $packagesConfigFile)
 
-# Add-Type -Path .\Microsoft.AspNet.Razor.2.0.20715.0\lib\net40\System.Web.Razor.dll
+# $packages = @($packagesConfig.packages.package | select-object -index 0,2) | % {getNugetData $_} 
 
-# $language = New-Object `
-    # -TypeName System.Web.Razor.CSharpRazorCodeLanguage
-# $engineHost = New-Object `
-    # -TypeName System.Web.Razor.RazorEngineHost `
-    # -ArgumentList $language `
-    # -Property @{
-        # DefaultBaseClass = "TemplateBase";
-        # DefaultClassName = "Template";
-        # DefaultNamespace = "Templates";
-    # }
-# $engine = New-Object `
-    # -TypeName System.Web.Razor.RazorTemplateEngine `
-    # -ArgumentList $engineHost
+# $packages[1]
+
+ $razorAssembly = 
+            [AppDomain]::CurrentDomain.GetAssemblies() |
+                ? { $_.FullName -match "^System.Web.Razor" }
+    
+        If ($razorAssembly -eq $null) {
+            
+            $razorSearchPath = Join-Path `
+                -Path $PWD `
+                -ChildPath packages\Microsoft.AspNet.Razor.*\lib\net40\System.Web.Razor.dll
+                
+            $razorPath = Get-ChildItem -Path $razorSearchPath |
+                Select-Object -First 1 -ExpandProperty FullName
+            
+			If ($razorPath -eq $null) {
+				
+				# Attempt to get the Razor libraries from nuget
+				$packageDestination = ([string](Get-ScriptDirectory) + "\packages")
+				if(!(Test-Path $packageDestination))
+				{
+					mkdir $packageDestination
+				}
+				
+				nuget install Microsoft.AspNet.Razor /OutputDirectory $packageDestination
+			}
+			
+            If ($razorPath -ne $null) {
+                Add-Type -Path $razorPath
+            } Else {            
+                throw "The System.Web.Razor assembly must be loaded."
+            }
+        }
+
+$language = New-Object `
+     -TypeName System.Web.Razor.CSharpRazorCodeLanguage
+$engineHost = New-Object `
+    -TypeName System.Web.Razor.RazorEngineHost `
+    -ArgumentList $language `
+    -Property @{
+        DefaultBaseClass = "TemplateBase";
+        DefaultClassName = "Template";
+        DefaultNamespace = "Templates";
+    }
+$engine = New-Object `
+    -TypeName System.Web.Razor.RazorTemplateEngine `
+    -ArgumentList $engineHost
 	
-# $template = "Hello World!"
-# $templateReader = New-Object `
-    # -TypeName System.IO.StringReader `
-    # -ArgumentList $template
-# $code = $engine.GenerateCode($templateReader)
+$template = (Get-Content $templateFile)
+$templateReader = New-Object `
+    -TypeName System.IO.StringReader `
+    -ArgumentList [string]$template
+$code = $engine.GenerateCode($templateReader)
 
-# $codeWriter = New-Object -TypeName System.IO.StringWriter
-# $compiler = New-Object `
-    # -TypeName Microsoft.CSharp.CSharpCodeProvider
-# $compiler.GenerateCodeFromCompileUnit(
-    # $code.GeneratedCode, $codeWriter, $null
-# )
-# $templateCode = $codeWriter.ToString()
+$codeWriter = New-Object -TypeName System.IO.StringWriter
+$compiler = New-Object `
+    -TypeName Microsoft.CSharp.CSharpCodeProvider
+$compiler.GenerateCodeFromCompileUnit(
+    $code.GeneratedCode, $codeWriter, $null
+)
+$templateCode = $codeWriter.ToString()
 
-# $allcode = @"
-# using System;
+$allcode = @"
+using System;
 
-# namespace Templates {
+namespace Templates {
 
-	# public abstract class TemplateBase {
-		# public abstract void Execute();
-		# public virtual void WriteLiteral(object value) {
-			# Console.Write(value);
-		# }
-	# }
-# }
-# "@ + "`n" + $templateCode
+	public abstract class TemplateBase {
+		public abstract void Execute();
+		public virtual void WriteLiteral(object value) {
+			Console.Write(value);
+		}
+	}
+}
+"@ + "`n" + $templateCode
 
-# Write-Host $allCode
+Write-Host $allCode
 
-# Add-Type -typedefinition $allcode
+Add-Type -typedefinition $allcode
 
-# $templateinstance = new-object -typename Templates.Template
-# $templateinstance.execute()
+$templateinstance = new-object -typename Templates.Template
+$templateinstance.execute()
