@@ -24,10 +24,13 @@ function getNugetData ($package) {
 	
 	[xml]$packageData = $result
 	
-	@{LicenseUrl = $packageData.entry.properties.LicenseUrl; `
-	ProjectUrl = $packageData.entry.properties.ProjectUrl; `
-	Id = $package.id; `
-	Version = $package.version}
+	$result = New-Object -TypeName PSObject
+	
+	$result | 
+		Add-Member -MemberType NoteProperty -Name LicenseUrl -Value $packageData.entry.properties.LicenseUrl -PassThru |
+		Add-Member -MemberType NoteProperty -Name ProjectUrl -Value $packageData.entry.properties.ProjectUrl -PassThru |
+		Add-Member -MemberType NoteProperty -Name Id -Value $package.id -PassThru |
+		Add-Member -MemberType NoteProperty -Name Version -Value $package.version -PassThru
 }
 
 function Get-ScriptDirectory
@@ -44,27 +47,6 @@ function Get-FrameworkDirectory()
 [xml]$packagesConfig = (Get-Content $packagesConfigFile)
 
 $packages = @($packagesConfig.packages.package | select-object -index 0,2) | % {getNugetData $_} 
-
-$csharpAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
-                ? { $_.FullName -match "^Microsoft.CSharp" }
-				
-If ($csharpAssembly -eq $null) {
-	$csharpSearchPath = (Get-FrameworkDirectory) 
-
-	$csharpPath = Get-ChildItem -Path  $csharpSearchPath -r -i *.dll | 
-		Where-Object {$_.Name -eq "Microsoft.CSharp.dll" } | 
-		Select-Object -First 1 -ExpandProperty FullName
-		
-	If ($csharpPath -ne $null) {
-		Add-Type -Path $csharpPath
-		Write-Host "Found"
-	} Else {            
-		throw "The Microsoft.CSharp assembly must be loaded."
-	}
-}
-else {
-					Write-Host "already loaded"
-}
 
 $razorAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
                 ? { $_.FullName -match "^System.Web.Razor" }
@@ -96,8 +78,6 @@ If ($razorAssembly -eq $null) {
 		throw "The System.Web.Razor assembly must be loaded."
 	}
 }
-
-		
 		
 $language = New-Object `
      -TypeName System.Web.Razor.CSharpRazorCodeLanguage
@@ -159,7 +139,7 @@ namespace Templates {
 }
 "@ + "`n" + $templateCode
 
-Add-Type -typedefinition $allcode
+Add-Type -typedefinition $allcode -ReferencedAssemblies Microsoft.CSharp.dll
 
 $templateinstance = new-object -typename Templates.Template
 $templateinstance.Render($packages)
