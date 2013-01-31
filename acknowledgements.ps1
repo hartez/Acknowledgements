@@ -1,4 +1,3 @@
-# Need to get rid of the little [string] at the beginning
 # Need to make the default template cooler
 # Add author property
 
@@ -30,11 +29,19 @@ function getNugetData ($package) {
 		
 		$result = New-Object -TypeName PSObject
 		
+		# LicenseUrl, ProjectUrl, Description, and Author are not required, so we want empty strings (instead of XmlElement) if they aren't available
+		$licenseUrl = if ($packageData.entry.properties.LicenseUrl.null -eq $true) {""} else {$packageData.entry.properties.LicenseUrl}
+		$projectUrl = if ($packageData.entry.properties.ProjectUrl.null -eq $true) {""} else {$packageData.entry.properties.ProjectUrl}
+		$description = if ($packageData.entry.properties.Description.null -eq $true) {""} else {$packageData.entry.properties.Description}
+		$author = if ($packageData.entry.author.name.null -eq $true) {""} else {$packageData.entry.author.name}
+		
 		$result | 
-			Add-Member -MemberType NoteProperty -Name LicenseUrl -Value $packageData.entry.properties.LicenseUrl -PassThru |
-			Add-Member -MemberType NoteProperty -Name ProjectUrl -Value $packageData.entry.properties.ProjectUrl -PassThru |
+			Add-Member -MemberType NoteProperty -Name LicenseUrl -Value $licenseUrl -PassThru |
+			Add-Member -MemberType NoteProperty -Name ProjectUrl -Value $projectUrl -PassThru |
 			Add-Member -MemberType NoteProperty -Name Id -Value $package.id -PassThru |
-			Add-Member -MemberType NoteProperty -Name Version -Value $package.version -PassThru
+			Add-Member -MemberType NoteProperty -Name Version -Value $package.version -PassThru |
+			Add-Member -MemberType NoteProperty -Name Description -Value $description -PassThru |
+			Add-Member -MemberType NoteProperty -Name Author -Value $author -PassThru
 		}
 	catch [System.Exception]{
 		Write-Host $_.Exception.Message 

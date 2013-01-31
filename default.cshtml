@@ -5,18 +5,22 @@
 	<thead>
 		<tr>
 			<td>Package</td>
+			<td>Author</td>
 			<td>Version</td>
 			<td>Project URL</td>
 			<td>License URL</td>
+			<td>Description</td>
 		</tr>
 	</thead>
 	<tbody>
 	@foreach(var m in Model) {
 		<tr>
 			<td>@m.Id</td>
+			<td>@m.Author</td>
 			<td>@m.Version</td>
 			<td><a href="@m.ProjectUrl">@m.ProjectUrl</a></td>
 			<td><a href="@m.LicenseUrl">@m.LicenseUrl</a></td>
+			<td>@m.Description</td>
 		</tr>
 	}
 	</tbody>
