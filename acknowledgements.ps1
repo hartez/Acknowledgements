@@ -1,8 +1,6 @@
-#Needs to force recompile of the template each time (otherwise the type stays in the appdomain
-#and changes to the template don't show up in the output)
-# Need to figure out how to have multiple package sources or ignore non-public packages
 # Need to get rid of the little [string] at the beginning
 # Need to make the default template cooler
+# Add author property
 
 if($args.length -lt 3)
 {
@@ -21,20 +19,27 @@ function getNugetData ($package) {
 	$packageUrl = ("http://nuget.org/api/v2/Packages(Id='{0}',Version='{1}')" -f $package.id, $package.version)
 	
 	$request = [System.Net.WebRequest]::Create($packageUrl)
-	$response = $request.GetResponse()
-	$reqstream = $response.GetResponseStream()
-	$sr = new-object System.IO.StreamReader $reqstream
-	$result = $sr.ReadToEnd()
 	
-	[xml]$packageData = $result
-	
-	$result = New-Object -TypeName PSObject
-	
-	$result | 
-		Add-Member -MemberType NoteProperty -Name LicenseUrl -Value $packageData.entry.properties.LicenseUrl -PassThru |
-		Add-Member -MemberType NoteProperty -Name ProjectUrl -Value $packageData.entry.properties.ProjectUrl -PassThru |
-		Add-Member -MemberType NoteProperty -Name Id -Value $package.id -PassThru |
-		Add-Member -MemberType NoteProperty -Name Version -Value $package.version -PassThru
+	try {
+		$response = $request.GetResponse()
+		$reqstream = $response.GetResponseStream()
+		$sr = new-object System.IO.StreamReader $reqstream
+		$result = $sr.ReadToEnd()
+		
+		[xml]$packageData = $result
+		
+		$result = New-Object -TypeName PSObject
+		
+		$result | 
+			Add-Member -MemberType NoteProperty -Name LicenseUrl -Value $packageData.entry.properties.LicenseUrl -PassThru |
+			Add-Member -MemberType NoteProperty -Name ProjectUrl -Value $packageData.entry.properties.ProjectUrl -PassThru |
+			Add-Member -MemberType NoteProperty -Name Id -Value $package.id -PassThru |
+			Add-Member -MemberType NoteProperty -Name Version -Value $package.version -PassThru
+		}
+	catch [System.Exception]{
+		Write-Host $_.Exception.Message 
+		Write-Host "You may have to handle this package manually."
+	}
 }
 
 function Get-ScriptDirectory
@@ -82,25 +87,32 @@ If ($razorAssembly -eq $null) {
 		throw "The System.Web.Razor assembly must be loaded."
 	}
 }
-		
+
+$templateClassName = "t{0}" -f 
+            ([System.IO.Path]::GetRandomFileName() -replace "\.", "")
+$templateBaseClassName = "t{0}" -f 
+            ([System.IO.Path]::GetRandomFileName() -replace "\.", "")
+			
 $language = New-Object `
      -TypeName System.Web.Razor.CSharpRazorCodeLanguage
 $engineHost = New-Object `
     -TypeName System.Web.Razor.RazorEngineHost `
     -ArgumentList $language `
     -Property @{
-        DefaultBaseClass = "TemplateBase";
-        DefaultClassName = "Template";
+        DefaultBaseClass = $templateBaseClassName;
+        DefaultClassName = $templateClassName;
         DefaultNamespace = "Templates";
     }
 $engine = New-Object `
     -TypeName System.Web.Razor.RazorTemplateEngine `
     -ArgumentList $engineHost
 	
-$template = (Get-Content $templateFile)
+[string]$template = Get-Content $templateFile
+
 $templateReader = New-Object `
     -TypeName System.IO.StringReader `
-    -ArgumentList [string]$template
+    -ArgumentList $template
+
 $code = $engine.GenerateCode($templateReader)
 
 $codeWriter = New-Object -TypeName System.IO.StringWriter
@@ -111,15 +123,16 @@ $compiler.GenerateCodeFromCompileUnit(
 )
 $templateCode = $codeWriter.ToString()
 
-$allCode = @"
+$templateBaseCode = @"
 using System;
 using System.Text;
 using Microsoft.CSharp;
 using Microsoft.CSharp.RuntimeBinder;
 
-namespace Templates {
-
-	public abstract class TemplateBase {
+namespace Templates 
+{{
+	public abstract class {0} 
+	{{
 		protected dynamic Model;
         private StringBuilder _sb = new StringBuilder();
         public abstract void Execute();
@@ -135,16 +148,75 @@ namespace Templates {
         {{
             Model = model;
             Execute();
-            var res = _sb.ToString();
-            _sb.Clear();
-            return res;
+            return _sb.ToString();
         }}
-	}
-}
-"@ + "`n" + $templateCode
+		
+		public virtual void WriteAttribute(string name, Tuple<string, int> startTag, Tuple<string, int> endTag, params object[] values)
+		{{
+			StringBuilder sb = new StringBuilder();
+		 
+			sb.Append(startTag.Item1);
+		 
+			Type[] types = new[] {{ typeof(object), typeof(string), typeof(decimal), typeof(bool), typeof(char), typeof(byte), typeof(sbyte), typeof(short), typeof(int), typeof(long), typeof(ushort), typeof(uint), typeof(ulong), typeof(float), typeof(double) }};
+		 
+			// All values must be of type:
+			// Tuple<Tuple<string, int>, Tuple<______, int>, bool>
+			//       ----- TupleA -----  ----- TupleB -----  bool
+		 
+			Type genTuple = typeof(Tuple<,>);
+			Type genTriple = typeof(Tuple<,,>);
+		 
+			Type tupleA = genTuple.MakeGenericType(typeof(string), typeof(int));
+		 
+			foreach (var value in values)
+			{{
+				// Find the type of this value
+				foreach (Type type in types)
+				{{
+					Type tupleB = genTuple.MakeGenericType(type, typeof(int));
+					Type nonGen = genTriple.MakeGenericType(tupleA, tupleB, typeof(bool));
+		 
+					// Check if value is this type
+					if (!nonGen.IsInstanceOfType(value)) 
+						continue;
+		 
+					// Found
+					// Convert it to this
+					dynamic typedObject = Convert.ChangeType(value, nonGen);
+		 
+					if (typedObject == null) 
+						continue;
+		 
+					sb.Append(WriteAttribute(typedObject));
+					break;
+				}}
+			}}
+		 
+			sb.Append(endTag.Item1);
+		 
+			_sb.Append(sb);
+		}}
+		
+		private static string WriteAttribute<P>(Tuple<Tuple<string, int>, Tuple<P, int>, bool> value)
+		{{
+			if (value == null)
+				return string.Empty;
+		 
+			StringBuilder sb = new StringBuilder();
+		 
+			sb.Append(value.Item1.Item1);
+			sb.Append(value.Item2.Item1);
+		 
+			return sb.ToString();
+		}}
+	}}
+}}
+"@ -f $templateBaseClassName
+
+$allCode = $templateBaseCode + "`n" + $templateCode
 
 Add-Type -TypeDefinition $allCode -ReferencedAssemblies Microsoft.CSharp.dll
 
-$templateInstance = new-object -typename Templates.Template
+$templateInstance = new-object -typename ("{0}.{1}" -f "Templates", $templateClassName)
 
 Set-Content ($outputFile) $templateinstance.Render($packages)
