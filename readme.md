@@ -10,6 +10,8 @@ Acknowledgements will retrieve information about each package from Nuget.org and
 
     acknowledgements [path to packages.config] [path to template] [output path]
 
+Take a look at the example_output.html file to see an example output from an actual project.
+
 ## Template
 	
 Acknowledgements has a default template (default.cshtml), but it can populate any Razor template. Here's an example of a (very) basic template:
@@ -36,6 +38,10 @@ Acknowledgements currently supports Id (the name of the package), version, autho
 ## Alternate Feeds
 
 At the moment there's no support for alternate feeds (e.g., if you run a local NuGet feed from TeamCity). Packages that aren't available on NuGet.org are just ignored. I might be adding support for local feeds in the future.
+
+## Project Dependencies
+
+Right now Acknowledgements only handles a single packages.config at a time; it doesn't handle packages from other projects referenced in your solution. At some point I'll be adding a way to point it at a .csproj file so that it can find other packages.config files in referenced projects. 
 
 ## Dependencies
 
