@@ -1,3 +1,30 @@
 table thead tr td {
 	font-weight:bold;
 }
+
+td.author {
+	max-width:10em;
+}
+
+td.licenseurl, td.projecturl {
+    max-width:15em;
+    overflow:hidden;   
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+
+td.description {
+   max-width:30em;
+   white-space:nowrap; 
+   overflow:hidden;
+   text-overflow:ellipsis;
+}
+
+td.description:hover {
+   overflow:visible;
+   white-space: normal;
+}
+
+tr:nth-child(even) {
+    background-color: #CCCCCC;
+}
