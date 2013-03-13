@@ -1,6 +1,3 @@
-# Need to make the default template cooler
-# Add author property
-
 if($args.length -lt 3)
 {
 	Write-Host "Usage: acknowledgements [path to packages.config] [path to template] [output path]"
@@ -70,7 +67,7 @@ $razorAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
 If ($razorAssembly -eq $null) {
 	
 	$razorSearchPath = Join-Path `
-		-Path $PWD `
+		-Path (Get-ScriptDirectory) `
 		-ChildPath packages\Microsoft.AspNet.Razor.*\lib\net40\System.Web.Razor.dll
 		
 	$razorPath = Get-ChildItem -Path $razorSearchPath |
