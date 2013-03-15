@@ -12,6 +12,15 @@ Acknowledgements will retrieve information about each package from Nuget.org and
 
 Take a look at the example_output.html file to see an example output from an actual project.
 
+If you want to run this as a post-build event from Visual Studio, you could set your post-build event command to something like this: 
+
+    if $(ConfigurationName) == Release powershell -NoProfile -file $(SolutionDir)packages\Acknowledgements.1.0.2\tools\acknowledgements.ps1 $(ProjectDir)packages.config $(SolutionDir)packages\Acknowledgements.1.0.2\tools\default.cshtml $(ProjectDir)acknowledgements.html $(SolutionDir).nuget\NuGet.exe
+
+This will run the script on a Release build. The final parameter is the path to NuGet.exe, which you only need to include if 
+
+- You don't have nuget.exe already in the path
+- You don't already have the Razor template library loaded on your system (the script uses nuget to retrieve the Razor library)
+    
 ## Template
 	
 Acknowledgements has a default template (default.cshtml), but it can populate any Razor template. Here's an example of a (very) basic template:
