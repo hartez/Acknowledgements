@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Acknowledgements</id>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <title>Acknowledgements</title>
     <authors>E.Z. Hart</authors>
     <owners>E.Z. Hart and Traceur LLC</owners>
@@ -15,7 +15,7 @@
   </metadata>
   <files>
 	<file src="default.cshtml" target="tools\default.cshtml" />
-	<file src="default.css" target="tools\default.css" />
+	<file src="acknowledgements.css" target="tools\acknowledgements.css" />
 	<file src="acknowledgements.ps1" target="tools\acknowledgements.ps1" />
   </files>
 </package>
