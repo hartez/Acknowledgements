@@ -4,9 +4,20 @@ if($args.length -lt 3)
 	exit
 }
 
+trap {Write-Error $_.Exception.Message; exit -1; continue}
+
 $packagesConfigFile = $args[0]
 $templateFile = $args[1]
 $outputFile = $args[2]
+
+if($args.length -gt 3) 
+{
+	$nugetExePath = $args[3]
+}
+else
+{
+	$nugetExePath = 'nuget'
+}
 
 function getNugetData ($package) {
 		
@@ -40,9 +51,20 @@ function getNugetData ($package) {
 			Add-Member -MemberType NoteProperty -Name Description -Value $description -PassThru |
 			Add-Member -MemberType NoteProperty -Name Author -Value $author -PassThru
 		}
-	catch [System.Exception]{
-		Write-Host $_.Exception.Message 
-		Write-Host "You may have to handle this package manually."
+	catch [System.Net.WebException]{
+		if($_.Exception.Message -match "404") 
+		{
+			# For some reason, we have to strip the colon out of this message or
+			# writing it out to the host in VS (as a post-build event) will cause
+			# the build to fail
+			$msg = $_.Exception.Message -replace ":", " "
+			Write-Warning $msg 
+			Write-Warning ("You may have to handle the package " + $package.id + " manually.")
+		}
+		else
+		{
+			throw
+		}
 	}
 }
 
@@ -56,6 +78,8 @@ function Get-FrameworkDirectory()
 {
     $([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory())
 }
+
+Write-Host "Retrieving package data for acknowledgements"
 
 [xml]$packagesConfig = (Get-Content $packagesConfigFile)
 
@@ -75,6 +99,8 @@ If ($razorAssembly -eq $null) {
 	
 	If ($razorPath -eq $null) {
 		
+		Write-Host "Razor assembly not found; retrieving it from NuGet"
+		
 		# Attempt to get the Razor libraries from nuget
 		$packageDestination = ([string](Get-ScriptDirectory) + "\packages")
 		if(!(Test-Path $packageDestination))
@@ -82,7 +108,15 @@ If ($razorAssembly -eq $null) {
 			mkdir $packageDestination
 		}
 		
-		nuget install Microsoft.AspNet.Razor /OutputDirectory $packageDestination
+		$nugetCmd = '$nugetExePath install Microsoft.AspNet.Razor /OutputDirectory $packageDestination'
+		iex "& $nugetCmd"
+		
+		# Now that it's installed, get the razor path again
+		$razorPath = Get-ChildItem -Path $razorSearchPath |
+			Select-Object -First 1 -ExpandProperty FullName
+			
+		
+		#todo need to figure out how to get the powershell script to have the correct exit code (maybe the 404s are an issue?)
 	}
 	
 	If ($razorPath -ne $null) {
@@ -224,3 +258,5 @@ Add-Type -TypeDefinition $allCode -ReferencedAssemblies Microsoft.CSharp.dll
 $templateInstance = new-object -typename ("{0}.{1}" -f "Templates", $templateClassName)
 
 Set-Content ($outputFile) $templateinstance.Render($packages)
+
+exit 0
