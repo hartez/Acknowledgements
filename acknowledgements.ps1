@@ -1,8 +1,11 @@
+[System.Reflection.Assembly]::LoadWithPartialName("System.Web.Razor")
+
 if($args.length -lt 3)
 {
 	Write-Host "Usage: acknowledgements [path to packages.config] [path to template] [output path]"
 	exit
 }
+
 
 trap {Write-Error $_.Exception.Message; exit -1; continue}
 
@@ -12,12 +15,9 @@ $outputFile = $args[2]
 
 if($args.length -gt 3) 
 {
-	$nugetExePath = $args[3]
+	$repoConfigFile = $args[3]
 }
-else
-{
-	$nugetExePath = 'nuget'
-}
+$nugetExePath = 'nuget'
 
 function getNugetData ($package) {
 		
@@ -81,9 +81,29 @@ function Get-FrameworkDirectory()
 
 Write-Host "Retrieving package data for acknowledgements"
 
+[xml]$repositoriesConfig = (Get-Content $repoConfigFile)
 [xml]$packagesConfig = (Get-Content $packagesConfigFile)
 
-$packages = @($packagesConfig.packages.package | % {getNugetData $_})
+Write-Host $repoConfigFile
+@($repositoriesConfig.repositories.repository.path | % {write-host $_})
+
+if ($repoConfigFile -eq $null){
+    $packages = 
+    @(
+        @(
+            @(
+                @($repositoriesConfig.repositories.repository.path `
+                    | % {join-path -path (get-childitem $repoConfigFile).Directory.FullName -childpath $_}
+                ) `
+                | % {select-xml -path $_ -XPath packages}
+        ) `
+            | %  {$_.Node.package}) | % {getNugetData $_}
+    )
+}
+else
+{
+    $packages = @($packagesConfig.packages.package | % {getNugetData $_})
+}
 
 $razorAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
                 ? { $_.FullName -match "^System.Web.Razor" }
