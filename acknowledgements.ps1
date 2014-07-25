@@ -88,6 +88,10 @@ Write-Host $repoConfigFile
 @($repositoriesConfig.repositories.repository.path | % {write-host $_})
 
 if ($repoConfigFile -eq $null){
+    $packages = @($packagesConfig.packages.package | % {getNugetData $_})
+}
+else
+{
     $packages = 
     @(
         @(
@@ -99,10 +103,6 @@ if ($repoConfigFile -eq $null){
         ) `
             | %  {$_.Node.package}) | % {getNugetData $_}
     )
-}
-else
-{
-    $packages = @($packagesConfig.packages.package | % {getNugetData $_})
 }
 
 $razorAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
