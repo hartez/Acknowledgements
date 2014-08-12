@@ -108,7 +108,7 @@ If ($razorAssembly -eq $null) {
 			mkdir $packageDestination
 		}
 		
-		$nugetCmd = '$nugetExePath install Microsoft.AspNet.Razor /OutputDirectory $packageDestination'
+		$nugetCmd = '$nugetExePath install Microsoft.AspNet.Razor -Version 2.0.20715 -OutputDirectory $packageDestination'
 		iex "& $nugetCmd"
 		
 		# Now that it's installed, get the razor path again
