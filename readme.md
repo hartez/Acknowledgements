@@ -54,7 +54,7 @@ Right now Acknowledgements only handles a single packages.config at a time; it d
 
 ## Dependencies
 
-Acknowledgements requires PowerShell 3 and .NET 4.0 or higher. The first time it's run, it will attempt to grab the latest version of the Microsoft.AspNet.Razor package from NuGet and install it to the /packages folder under the script's folder. You can also oput the Razor libraries in that folder manually (say, if you don't have nuget.exe available).
+Acknowledgements requires PowerShell 3 and .NET 4.0 or higher. The first time it's run, it will attempt to grab the latest version of the Microsoft.AspNet.Razor package from NuGet and install it to the /packages folder under the script's folder. You can also put the Razor libraries in that folder manually (say, if you don't have nuget.exe available).
 
 ## Disclaimer
 
