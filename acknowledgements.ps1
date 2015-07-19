@@ -92,7 +92,7 @@ If ($razorAssembly -eq $null) {
 	
 	$razorSearchPath = Join-Path `
 		-Path (Get-ScriptDirectory) `
-		-ChildPath packages\Microsoft.AspNet.Razor.*\lib\net40\System.Web.Razor.dll
+		-ChildPath packages\Microsoft.AspNet.Razor.*\lib\net*\System.Web.Razor.dll
 		
 	$razorPath = Get-ChildItem -Path $razorSearchPath |
 		Select-Object -First 1 -ExpandProperty FullName
