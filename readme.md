@@ -40,6 +40,8 @@ Acknowledgements has a default template (default.cshtml), but it can populate an
     	</tbody>
     </table>
 
+There's also a [Bootstrap](http://getbootstrap.com/) compatible template included (default_bootstrap.cshtml).
+
 ## Package Properties
 
 Acknowledgements currently supports Id (the name of the package), version, author, project URL, license URL, and description. 
