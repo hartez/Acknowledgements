@@ -1,21 +1,22 @@
-<?xml version="1.0"?>
-<package >
-  <metadata>
-    <id>Acknowledgements</id>
-    <version>1.0.2</version>
-    <title>Acknowledgements</title>
-    <authors>E.Z. Hart</authors>
-    <owners>E.Z. Hart and Traceur LLC</owners>
-<licenseUrl>https://raw.github.com/hartez/Acknowledgements/master/license.txt</licenseUrl>
-    <projectUrl>https://github.com/hartez/Acknowledgements</projectUrl>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>PowerShell script for generating acknowledgements pages from a project's NuGet package configuration</description>
-    <copyright>Copyright 2013</copyright>
-    <tags>nuget license attribution acknowledgement powershell</tags>
-  </metadata>
-  <files>
-	<file src="default.cshtml" target="tools\default.cshtml" />
-	<file src="acknowledgements.css" target="tools\acknowledgements.css" />
-	<file src="acknowledgements.ps1" target="tools\acknowledgements.ps1" />
-  </files>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>Acknowledgements</id>
+        <version>1.0.4</version>
+        <title>Acknowledgements</title>
+        <authors>E.Z. Hart</authors>
+        <owners>E.Z. Hart and CodeWise LLC</owners>
+        <licenseUrl>https://raw.github.com/hartez/Acknowledgements/master/license.txt</licenseUrl>
+        <projectUrl>https://github.com/hartez/Acknowledgements</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>PowerShell script for generating acknowledgements pages from a project's NuGet package configuration</description>
+        <copyright>Copyright 2015</copyright>
+        <tags>nuget license attribution acknowledgement powershell</tags>
+    </metadata>
+    <files>
+        <file src="acknowledgements.css" target="tools\acknowledgements.css" />
+        <file src="acknowledgements.ps1" target="tools\acknowledgements.ps1" />
+        <file src="default.cshtml" target="tools\default.cshtml" />
+        <file src="default_bootstrap.cshtml" target="tools\default_bootstrap.cshtml" />
+    </files>
 </package>
